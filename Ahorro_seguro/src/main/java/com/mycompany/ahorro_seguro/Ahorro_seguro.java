@@ -165,45 +165,36 @@ public class Ahorro_seguro {
     }
 
     public static void pagarCuota(int codigoPrestamo, double monto) {
-        // Buscar el crédito por el código proporcionado
         CreditoVigente credito = listaCreditos.buscarCreditoPorCodigo(codigoPrestamo);
 
         if (credito != null) {
-            // Obtener la siguiente cuota pendiente
             Cuota cuotaPendiente = credito.obtenerSiguienteCuotaPendiente();
 
             if (cuotaPendiente != null) {
-                // Mostrar el valor de la cuota pendiente
                 double valorCuota = cuotaPendiente.getValor();
                 JOptionPane.showMessageDialog(null, "El valor de la cuota pendiente es: $" + valorCuota);
 
-                // Comprobar si el monto ingresado cubre el valor de la cuota
                 if (monto >= valorCuota) {
-                    // Si el monto es suficiente, marca la cuota como pagada y calcula el excedente
+
                     cuotaPendiente.setEstado("pagada");
                     double excedente = monto - valorCuota;
 
-                    // Si hay un excedente, aplicarlo a la siguiente cuota
                     if (excedente > 0) {
                         aplicarExcedente(credito, excedente);
                     }
                     JOptionPane.showMessageDialog(null, "Pago realizado, cuota pagada.");
                 } else {
-                    // Si el monto es insuficiente, solo reduce el valor de la cuota y la mantiene pendiente
                     cuotaPendiente.setValor(valorCuota - monto);
                     JOptionPane.showMessageDialog(null, "Monto insuficiente, la cuota sigue en estado pendiente.");
                 }
 
-                // Calcular el número de cuotas restantes en estado "pendiente"
                 int cuotasPendientes = contarCuotasPendientes(credito);
                 JOptionPane.showMessageDialog(null, "Quedan " + cuotasPendientes + " cuotas pendientes.");
 
             } else {
-                // No hay cuotas pendientes en el préstamo
                 JOptionPane.showMessageDialog(null, "No hay cuotas pendientes para este préstamo.");
             }
         } else {
-            // No se encontró el préstamo
             JOptionPane.showMessageDialog(null, "Préstamo no encontrado.");
         }
     }
@@ -225,11 +216,10 @@ public class Ahorro_seguro {
 
 
     public static void cancelarCredito(int codigoPrestamo) {
-        // Buscar el crédito en la lista de créditos vigentes
+
         CreditoVigente credito = listaCreditos.buscarCreditoPorCodigo(codigoPrestamo);
 
         if (credito != null) {
-            // Paso 1: Calcular el total de capital vigente que se debe
             double totalCapital = 0;
             Node nodoCuota = credito.getCuotas().getFirst();
             while (nodoCuota != null) {
@@ -247,7 +237,7 @@ public class Ahorro_seguro {
             while (nodoCuota != null) {
                 Cuota cuota = (Cuota) nodoCuota.getData();
                 cuota.setEstado("pagada");
-                cuota.setValor(0); // Establecer el valor a 0 ya que está pagada
+                cuota.setValor(0);
                 nodoCuota = nodoCuota.getLink();
             }
 
@@ -257,5 +247,7 @@ public class Ahorro_seguro {
         }
     }
 }
+
+// math.random()*4+28
 
 
