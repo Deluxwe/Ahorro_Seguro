@@ -3,11 +3,11 @@ package com.mycompany.ahorro_seguro;
 public class Cuota {
 
     private double valor;
-    private String estado; // "pendiente" o "pagada"
+    private String estado;
 
     public Cuota(double valor) {
         this.valor = valor;
-        this.estado = "pendiente"; // Todas las cuotas inician como pendientes
+        this.estado = "pendiente";
     }
 
     public double getValor() {
@@ -31,4 +31,3 @@ public class Cuota {
         return "Cuota{valor=" + valor + ", estado=" + estado + "}";
     }
 }
-
