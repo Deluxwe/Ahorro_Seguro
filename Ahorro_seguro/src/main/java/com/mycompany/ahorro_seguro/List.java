@@ -163,7 +163,7 @@ public class List {
             }
             actual = actual.getLink();
         }
-        return null; // Si no se encuentra el crédito, retorna null
+        return null; 
     }
 
 }
