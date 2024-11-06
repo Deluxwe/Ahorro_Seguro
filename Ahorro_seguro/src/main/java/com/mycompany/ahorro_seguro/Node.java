@@ -1,4 +1,3 @@
-
 package com.mycompany.ahorro_seguro;
 
 public class Node {
@@ -6,7 +5,7 @@ public class Node {
     private Node link;
     public Node(Object data) {
         this.data = data;
-        link = null;  //por defecto en null
+        link = null;  
     }
     public Object getData() {
         return data;
