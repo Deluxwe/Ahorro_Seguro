@@ -11,11 +11,12 @@ public class Ahorro_seguro {
     public static void main(String[] args) {
         List listRegistrados = new List();
         Cola colaSolicitud = new Cola();
+        ArbolBinario Arbol = new ArbolBinario();
 
         int code = 1;
 
         String menu[] = {"Registrar Cliente", "Solicitud de credito", "Aprobar o negar una solicitud de crédito",
-            "Pagar cuota", "Exit"};
+            "Pagar cuota", "Cancelar crédito", "Exit"};
         String option;
         do {
             option = (String) JOptionPane.showInputDialog(null, "Select", "Menu", 1, null, menu, menu[0]);
@@ -38,28 +39,29 @@ public class Ahorro_seguro {
 
                 case "Solicitud de credito":
 
-                    String tipoT = JOptionPane.showInputDialog("tarjeta, libre inversión, nómina o/e hipotecario");
+                    String tipoT = JOptionPane.showInputDialog("1. tarjeta \n 2. libre inversión \n 3.nómina \n 4.hipotecario (Digite el numero del prestamo que solicite)");
                     int idTitular = Integer.parseInt(JOptionPane.showInputDialog("Ingrese el ID del cliente titular"));
 
                     Cliente titular = listRegistrados.buscarClientePorId(idTitular);
 
-                    if (titular == null) {
+                    if (titular != null) {
+                        String fecha = JOptionPane.showInputDialog("Fecha en DD/MM/AAAA");
+                        double valor = Double.parseDouble(JOptionPane.showInputDialog("Digite el valor del prestamo"));
+                        int NumeroCuota = Integer.parseInt(JOptionPane.showInputDialog("Digite el numero de cuotas"));
+
+                        Credito nCredito = new Credito(code, tipoT, titular, new Date(), valor, NumeroCuota);
+                        colaSolicitud.Enqueue(nCredito);
+
+                        JOptionPane.showMessageDialog(null, "Credito añadido a cola");
+                        code += 1;
+
+                    } else {
                         JOptionPane.showMessageDialog(null, "Cliente no encontrado");
-
                     }
-                    String fecha = JOptionPane.showInputDialog("Fecha en DD/MM/AAAA");
-                    double valor = Double.parseDouble(JOptionPane.showInputDialog("Digite el valor del prestamo"));
-                    int NumeroCuota = Integer.parseInt(JOptionPane.showInputDialog("Digite el numero de cuotas"));
-
-                    Credito nCredito = new Credito(code, tipoT, titular, new Date(), valor, NumeroCuota);
-                    colaSolicitud.Enqueue(nCredito);
-
-                    JOptionPane.showMessageDialog(null, "Credito añadido a cola");
-                    code += 1;
-
                     break;
 
                 case "Aprobar o negar una solicitud de crédito":
+
                     Credito procesado = colaSolicitud.DequeueSolic();
                     if (procesado != null) {
                         if (aprobarSolicitud(procesado)) {
@@ -79,6 +81,10 @@ public class Ahorro_seguro {
                     pagarCuota(codigoP, montoPago);
 
                     break;
+                case "Cancelar crédito":
+                    int codigoPrestamo = Integer.parseInt(JOptionPane.showInputDialog("Ingrese el código del préstamo a cancelar:"));
+                    cancelarCredito(codigoPrestamo);
+                    break;
             }
 
         } while (!option.equals("Exit"));
@@ -89,20 +95,19 @@ public class Ahorro_seguro {
         double tasaAnual;
 
         switch (tipoCredito.toLowerCase()) {
-            case "tarjeta":
+            case "1":
                 tasaAnual = (28 + (Math.random() * (32 - 28)));
                 break;
-            case "libre inversión":
+            case "2":
                 tasaAnual = (20 + (Math.random() * (25 - 20)));
                 break;
-            case "nómina":
+            case "3":
                 tasaAnual = (15 + (Math.random() * (20 - 15)));
                 break;
-            case "hipotecario":
+            case "4":
                 tasaAnual = (10 + (Math.random() * (12 - 10)));
                 break;
             default:
-
                 return 0;
         }
 
@@ -114,26 +119,31 @@ public class Ahorro_seguro {
     }
 
     public static boolean aprobarSolicitud(Credito solicitud) {
+
         double salarioMensual = solicitud.getTitular().getSalarioM();
         double cuotaMensual = calcularCuota(solicitud.getValor(), calcularTEM(solicitud.getTipo()), solicitud.getnCuotas());
         double sumaCuotasActuales = listaCreditos.obtenerSumaCuotasMensuales(solicitud.getTitular());
-        
+
         if ((sumaCuotasActuales + cuotaMensual) <= (salarioMensual * 0.5)) {
+
             CreditoVigente creditoAprobado = new CreditoVigente(true, solicitud);
-            // Aquí agregamos las cuotas al crédito aprobado
+
+            JOptionPane.showMessageDialog(null, "El valor de cada cuota mensual será de: $" + cuotaMensual);
+
             for (int i = 0; i < solicitud.getnCuotas(); i++) {
-                Cuota cuota = new Cuota(cuotaMensual); 
+                Cuota cuota = new Cuota(cuotaMensual);
                 creditoAprobado.agregarCuota(cuota);
             }
+
             listaCreditos.agregarCredito(creditoAprobado);
             return true;
         } else {
+
             CreditoVigente creditoRechazado = new CreditoVigente(false, solicitud);
             pilaR.Push(creditoRechazado);
             return false;
         }
     }
-
 
     public static void aplicarExcedente(CreditoVigente credito, double excedente) {
         Cuota cuotaPendiente = credito.obtenerSiguienteCuotaPendiente();
@@ -142,11 +152,11 @@ public class Ahorro_seguro {
             double valorCuota = cuotaPendiente.getValor();
 
             if (excedente >= valorCuota) {
-                cuotaPendiente.setValor(0); 
-                cuotaPendiente.setEstado("pagada"); 
-                excedente -= valorCuota; 
+                cuotaPendiente.setValor(0);
+                cuotaPendiente.setEstado("pagada");
+                excedente -= valorCuota;
             } else {
-                cuotaPendiente.setValor(valorCuota - excedente); 
+                cuotaPendiente.setValor(valorCuota - excedente);
                 excedente = 0;
             }
 
@@ -155,34 +165,97 @@ public class Ahorro_seguro {
     }
 
     public static void pagarCuota(int codigoPrestamo, double monto) {
+        // Buscar el crédito por el código proporcionado
         CreditoVigente credito = listaCreditos.buscarCreditoPorCodigo(codigoPrestamo);
 
         if (credito != null) {
+            // Obtener la siguiente cuota pendiente
             Cuota cuotaPendiente = credito.obtenerSiguienteCuotaPendiente();
 
             if (cuotaPendiente != null) {
+                // Mostrar el valor de la cuota pendiente
                 double valorCuota = cuotaPendiente.getValor();
+                JOptionPane.showMessageDialog(null, "El valor de la cuota pendiente es: $" + valorCuota);
 
+                // Comprobar si el monto ingresado cubre el valor de la cuota
                 if (monto >= valorCuota) {
+                    // Si el monto es suficiente, marca la cuota como pagada y calcula el excedente
                     cuotaPendiente.setEstado("pagada");
                     double excedente = monto - valorCuota;
 
+                    // Si hay un excedente, aplicarlo a la siguiente cuota
                     if (excedente > 0) {
                         aplicarExcedente(credito, excedente);
                     }
                     JOptionPane.showMessageDialog(null, "Pago realizado, cuota pagada.");
                 } else {
+                    // Si el monto es insuficiente, solo reduce el valor de la cuota y la mantiene pendiente
                     cuotaPendiente.setValor(valorCuota - monto);
                     JOptionPane.showMessageDialog(null, "Monto insuficiente, la cuota sigue en estado pendiente.");
                 }
+
+                // Calcular el número de cuotas restantes en estado "pendiente"
+                int cuotasPendientes = contarCuotasPendientes(credito);
+                JOptionPane.showMessageDialog(null, "Quedan " + cuotasPendientes + " cuotas pendientes.");
+
             } else {
+                // No hay cuotas pendientes en el préstamo
                 JOptionPane.showMessageDialog(null, "No hay cuotas pendientes para este préstamo.");
             }
+        } else {
+            // No se encontró el préstamo
+            JOptionPane.showMessageDialog(null, "Préstamo no encontrado.");
+        }
+    }
+
+    public static int contarCuotasPendientes(CreditoVigente credito) {
+        int contador = 0;
+        Node nodoCuota = credito.getCuotas().getFirst();
+
+        while (nodoCuota != null) {
+            Cuota cuota = (Cuota) nodoCuota.getData();
+            if (cuota.getEstado().equals("pendiente")) {
+                contador++;
+            }
+            nodoCuota = nodoCuota.getLink();
+        }
+
+        return contador;
+    }
+
+
+    public static void cancelarCredito(int codigoPrestamo) {
+        // Buscar el crédito en la lista de créditos vigentes
+        CreditoVigente credito = listaCreditos.buscarCreditoPorCodigo(codigoPrestamo);
+
+        if (credito != null) {
+            // Paso 1: Calcular el total de capital vigente que se debe
+            double totalCapital = 0;
+            Node nodoCuota = credito.getCuotas().getFirst();
+            while (nodoCuota != null) {
+                Cuota cuota = (Cuota) nodoCuota.getData();
+                if (cuota.getEstado().equals("pendiente")) {
+                    totalCapital += cuota.getValor();
+                }
+                nodoCuota = nodoCuota.getLink();
+            }
+
+            double totalConDescuento = totalCapital * 0.9;
+            JOptionPane.showMessageDialog(null, "El total a cancelar con el descuento del 10% es: $" + totalConDescuento);
+
+            nodoCuota = credito.getCuotas().getFirst();
+            while (nodoCuota != null) {
+                Cuota cuota = (Cuota) nodoCuota.getData();
+                cuota.setEstado("pagada");
+                cuota.setValor(0); // Establecer el valor a 0 ya que está pagada
+                nodoCuota = nodoCuota.getLink();
+            }
+
+            JOptionPane.showMessageDialog(null, "Crédito cancelado y todas las cuotas se han marcado como pagadas.");
         } else {
             JOptionPane.showMessageDialog(null, "Préstamo no encontrado.");
         }
     }
 }
-
 
 
