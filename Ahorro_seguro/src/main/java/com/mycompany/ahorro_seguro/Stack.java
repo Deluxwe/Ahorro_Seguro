@@ -2,22 +2,22 @@ package com.mycompany.ahorro_seguro;
 
 public class Stack {
 
-    private Node top;
+    private Node tope;
 
     public Stack() {
     }
 
     public boolean isEmpty() {
-        return top == null;
+        return tope == null;
     }
 
     public void Push(Object data) {
         if (isEmpty()) {
-            top = new Node(data);
+            tope = new Node(data);
         } else {
             Node n = new Node(data);
-            n.setLink(top);
-            top = n;
+            n.setLink(tope);
+            tope = n;
         }
     }
     
@@ -26,8 +26,8 @@ public class Stack {
        Object data=null;
        if(!isEmpty())
        {
-           data=top.getData();
-           top=top.getLink();
+           data=tope.getData();
+           tope=tope.getLink();
            return data;
        }
        return null;
