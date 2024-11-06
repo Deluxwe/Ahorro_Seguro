@@ -27,19 +27,19 @@ public class CreditoVigente {
     public void agregarCuota(Cuota cuota) {
         cuotas.agregarCuota(cuota); 
     }
-public Cuota obtenerSiguienteCuotaPendiente() {
-    Node actual = cuotas.getFirst();
-    while (actual != null) {
-        if (actual.getData() instanceof Cuota) { 
-            Cuota cuota = (Cuota) actual.getData();
-            if (cuota.getEstado().equals("pendiente")) {
-                return cuota;
+    public Cuota obtenerSiguienteCuotaPendiente() {
+        Node actual = cuotas.getFirst();
+        while (actual != null) {
+             {
+                Cuota cuota = (Cuota) actual.getData();
+                if (cuota.getEstado().equals("pendiente")) {
+                    return cuota;
+                }
             }
+            actual = actual.getLink();
         }
-        actual = actual.getLink();
-    }
-    return null; 
+        return null;
 
-}
+    }
 
 }
