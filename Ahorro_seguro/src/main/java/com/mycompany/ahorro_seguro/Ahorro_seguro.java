@@ -184,5 +184,5 @@ public class Ahorro_seguro {
     }
 }
 
-// math.random()*4+28
+
 
