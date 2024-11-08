@@ -16,7 +16,7 @@ public class Ahorro_seguro {
         int code = 1;
 
         String menu[] = {"Registrar Cliente", "Solicitud de credito", "Aprobar o negar una solicitud de crédito",
-            "Pagar cuota", "Cancelar crédito", "Exit"};
+            "Pagar cuota", "Cancelar crédito", "Revaluar Solicitudes", "Exit"};
         String option;
         do {
             option = (String) JOptionPane.showInputDialog(null, "Select", "Menu", 1, null, menu, menu[0]);
@@ -84,6 +84,19 @@ public class Ahorro_seguro {
                 case "Cancelar crédito":
                     int codigoPrestamo = Integer.parseInt(JOptionPane.showInputDialog("Ingrese el código del préstamo a cancelar:"));
                     cancelarCredito(codigoPrestamo);
+                    break;
+                    
+                case "Revaluar Solicitudes":
+                    // Revaluar las solicitudes que están en la pila
+                    while (!pilaR.isEmpty()) {
+                        CreditoVigente creditoRechazado = (CreditoVigente) pilaR.Pop();
+                        Arbol.Add(creditoRechazado); // Agregar a árbol para revaluar
+                    }
+
+                    // Ahora revaluar las solicitudes en el árbol
+                    Arbol.revaluarSolicitudes(listaCreditos);
+
+                    JOptionPane.showMessageDialog(null, "Revaluación de solicitudes completada.");
                     break;
             }
 
@@ -246,8 +259,10 @@ public class Ahorro_seguro {
             JOptionPane.showMessageDialog(null, "Préstamo no encontrado.");
         }
     }
+    
 }
+    
+
 
 // math.random()*4+28
-
 
