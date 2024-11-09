@@ -5,18 +5,20 @@ import javax.swing.JOptionPane;
 
 public class Ahorro_seguro {
 
-    private static List listaCreditos = new List();
-    private static Stack pilaR = new Stack();
+    public static Archivo a = new Archivo();
+    private static List listaCreditos = a.LeerLista("ArchivoPlanoCreditos.txt");
+    private static Stack pilaR = a.LeerPila("ArchivoRechazados.txt", listaCreditos);
 
     public static void main(String[] args) {
-        List listRegistrados = new List();
-        Cola colaSolicitud = new Cola();
+
+        List listRegistrados = a.LeerLista("ArchivoPlanoClientes.txt");
+        Cola colaSolicitud = a.LeerCola("ArchivoSolicitudes.txt", listaCreditos);
         ArbolBinario Arbol = new ArbolBinario();
 
         int code = 1;
 
         String menu[] = {"Registrar Cliente", "Solicitud de credito", "Aprobar o negar una solicitud de crédito",
-            "Pagar cuota", "Cancelar crédito", "Revaluar Solicitudes", "Exit"};
+            "Pagar cuota", "Cancelar crédito", "Revaluar Solicitudes", "Guardar informacion", "Mostrar Créditos de una Persona", "Exit"};
         String option;
         do {
             option = (String) JOptionPane.showInputDialog(null, "Select", "Menu", 1, null, menu, menu[0]);
@@ -45,7 +47,6 @@ public class Ahorro_seguro {
                     Cliente titular = listRegistrados.buscarClientePorId(idTitular);
 
                     if (titular != null) {
-                        String fecha = JOptionPane.showInputDialog("Fecha en DD/MM/AAAA");
                         double valor = Double.parseDouble(JOptionPane.showInputDialog("Digite el valor del prestamo"));
                         int NumeroCuota = Integer.parseInt(JOptionPane.showInputDialog("Digite el numero de cuotas"));
 
@@ -85,24 +86,70 @@ public class Ahorro_seguro {
                     int codigoPrestamo = Integer.parseInt(JOptionPane.showInputDialog("Ingrese el código del préstamo a cancelar:"));
                     cancelarCredito(codigoPrestamo);
                     break;
-                    
+
                 case "Revaluar Solicitudes":
-                    // Revaluar las solicitudes que están en la pila
                     while (!pilaR.isEmpty()) {
                         CreditoVigente creditoRechazado = (CreditoVigente) pilaR.Pop();
-                        Arbol.Add(creditoRechazado); // Agregar a árbol para revaluar
+                        Arbol.Add(creditoRechazado);
                     }
 
-                    // Ahora revaluar las solicitudes en el árbol
                     Arbol.revaluarSolicitudes(listaCreditos);
 
                     JOptionPane.showMessageDialog(null, "Revaluación de solicitudes completada.");
                     break;
+                case "Guardar informacion":
+                    a.EscribirListaCliente(listRegistrados);
+                    a.EscribirListaCredito(listaCreditos);
+                    a.EscribirCola(colaSolicitud);
+                    a.EscribirPila(pilaR);
+                    JOptionPane.showMessageDialog(null, "Toda la informacion ha sido guardada");
+
+                    break;
+
+                case "Mostrar Créditos de una Persona":
+                    int idCliente = Integer.parseInt(JOptionPane.showInputDialog("Ingrese la identificación del cliente"));
+
+                    // Use listRegistrados to find the client, as it should contain Cliente objects
+                    Cliente cliente = listRegistrados.buscarClientePorId(idCliente);
+
+                    if (cliente != null) {
+                        // Client found, now show their credits
+                        String mensaje = "Créditos del cliente " + cliente.getNombre() + " (ID: " + cliente.getClienteID() + "):\n\n";
+
+                        // Traverse the list of active credits (listaCreditos) to display this client's credits
+                        Node creditoActual = listaCreditos.getFirst(); // Primer nodo de la lista de créditos
+                        boolean tieneCreditos = false;
+
+                        while (creditoActual != null) {
+                            CreditoVigente credito = (CreditoVigente) creditoActual.getData();
+
+                            // Check if the credit belongs to the client
+                            if (credito.getSolicitud().getTitular().getClienteID() == cliente.getClienteID()) {
+                                // Display credit information
+                                mensaje += "Código de Crédito: " + credito.getSolicitud().getCódigoCredito() + "\n";
+                                mensaje += "Cuotas Pendientes: " + contarPagosPendientes(credito) + "\n";
+                                mensaje += "Monto Pendiente: $" + calcularTotalCredito(credito) + "\n";
+                                mensaje += "------------------------------------------\n";
+
+                                tieneCreditos = true;
+                            }
+                            creditoActual = creditoActual.getLink();
+                        }
+
+                        if (!tieneCreditos) {
+                            mensaje = "El cliente no tiene créditos vigentes.";
+                        }
+
+                        JOptionPane.showMessageDialog(null, mensaje);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Cliente no encontrado.");
+                    }
+                    break;
             }
+            }
+            while (!option.equals("Exit"));
 
-        } while (!option.equals("Exit"));
-
-    }
+        }
 
     public static double calcularTEM(String tipoCredito) {
         double tasaAnual;
@@ -227,7 +274,6 @@ public class Ahorro_seguro {
         return contador;
     }
 
-
     public static void cancelarCredito(int codigoPrestamo) {
 
         CreditoVigente credito = listaCreditos.buscarCreditoPorCodigo(codigoPrestamo);
@@ -259,10 +305,47 @@ public class Ahorro_seguro {
             JOptionPane.showMessageDialog(null, "Préstamo no encontrado.");
         }
     }
-    
-}
-    
 
+    public static double obtenerTotalCredito(Cliente cliente) {
+        double total = 0.0;
+        Node creditoActual = listaCreditos.getFirst();
+        while (creditoActual != null) {
+            CreditoVigente credito = (CreditoVigente) creditoActual.getData();
+            if (credito.getSolicitud().getTitular().getClienteID() == cliente.getClienteID()) {
+                total += calcularTotalCredito(credito);
+            }
+            creditoActual = creditoActual.getLink();
+        }
+        return total;
+    }
+
+    public static double calcularTotalCredito(CreditoVigente credito) {
+        double total = 0;
+        Node cuotaActual = credito.getCuotas().getFirst();
+        while (cuotaActual != null) {
+            Cuota cuota = (Cuota) cuotaActual.getData();
+            if (cuota.getEstado().equals("pendiente")) {
+                total += cuota.getValor();
+            }
+            cuotaActual = cuotaActual.getLink();
+        }
+        return total;
+    }
+
+    public static int contarPagosPendientes(CreditoVigente credito) {
+        int pagosPendientes = 0;
+        Node cuotaActual = credito.getCuotas().getFirst();
+        while (cuotaActual != null) {
+            Cuota cuota = (Cuota) cuotaActual.getData();
+            if (cuota.getEstado().equals("pendiente")) {
+                pagosPendientes++;
+            }
+            cuotaActual = cuotaActual.getLink();
+        }
+        return pagosPendientes;
+    }
+
+}
 
 // math.random()*4+28
 
