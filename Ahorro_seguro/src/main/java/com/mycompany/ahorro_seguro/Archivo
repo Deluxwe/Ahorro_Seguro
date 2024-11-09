@@ -1,0 +1,267 @@
+package com.mycompany.ahorro_seguro;
+
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.JOptionPane;
+
+public class Archivo {
+
+    private File f;
+    private FileReader fr;
+    private FileWriter fw;
+    private BufferedReader br;
+    private BufferedWriter bw;
+
+    public void EscribirListaCliente(List lista) {
+        f = new File("ArchivoPlanoClientes.txt");
+        try {
+            fw = new FileWriter(f);
+            bw = new BufferedWriter(fw);
+
+            Node aux = lista.getFirst();
+            while (aux != null) {
+                Cliente c = (Cliente) aux.getData();
+                bw.write(c.getClienteID() + "\t" + c.getTipo() + "\t" + c.getNombre() + "\t"
+                        + c.getDireccion() + "\t" + c.getTelefono() + "\t" + c.gettContrato()
+                        + "\t" + c.getSalarioM() + "\n");
+                aux = aux.getLink();
+            }
+            bw.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void EscribirListaCredito(List lista) {
+        File file = new File("ArchivoPlanoCreditos.txt");
+
+        try (FileWriter fw = new FileWriter(file); BufferedWriter bw = new BufferedWriter(fw)) {
+
+            Node aux = lista.getFirst();
+
+            while (aux != null) {
+                CreditoVigente credito = (CreditoVigente) aux.getData();
+                Cliente cliente = credito.getSolicitud().getTitular();
+
+                // Format the data for each credit entry
+                String creditData = cliente.getClienteID() + "\t" + cliente.getTipo() + "\t"
+                        + cliente.getNombre() + "\t" + cliente.getDireccion() + "\t"
+                        + cliente.getTelefono() + "\t" + cliente.gettContrato() + "\t"
+                        + cliente.getSalarioM() + "\t" + credito.getSolicitud().getCódigoCredito() + "\t"
+                        + credito.getSolicitud().getValor() + "\t" + credito.isAprobado();
+
+                bw.write(creditData);
+                bw.newLine();
+
+                aux = aux.getLink();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List LeerLista(String ruta) {
+        List lista = new List();
+        f = new File(ruta);
+        String registro, campos[];
+        try {
+            fr = new FileReader(f);
+            br = new BufferedReader(fr);
+
+            while ((registro = br.readLine()) != null) {
+                campos = registro.split("\t");
+                Cliente c = new Cliente(Integer.parseInt(campos[0]),
+                        campos[1], campos[2], campos[3], campos[4], campos[5],
+                        Double.parseDouble(campos[6]));
+                lista.AddLast(c);
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    public Stack LeerPila(String ruta, List listaCreditos) {
+        Stack pila = new Stack();
+        File file = new File(ruta);
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String registro;
+
+            while ((registro = br.readLine()) != null) {
+                String[] campos = registro.split("\t");
+
+                int creditoID = Integer.parseInt(campos[1]);
+                boolean isApproved = Boolean.parseBoolean(campos[0]);
+
+                Credito creditov = listaCreditos.buscarCredito(creditoID);
+
+                if (creditov != null) {
+                    // Recreate the CreditoVigente object with approval status and credit data
+                    CreditoVigente creditoVigente = new CreditoVigente(Boolean.parseBoolean(campos[0]), creditov);
+                    pila.Push(creditoVigente);
+                } else {
+                    System.out.println("Crédito con ID " + creditoID + " no encontrado en listaCreditos.");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return pila;
+    }
+
+    public void EscribirPila(Stack pila) {
+
+        Stack aux = new Stack();
+        f = new File("ArchivoRechazados.txt");
+        try {
+            fw = new FileWriter(f);
+            bw = new BufferedWriter(fw);
+            while (!pila.isEmpty()) {
+                CreditoVigente p = (CreditoVigente) pila.Pop();
+                bw.write(p.isAprobado() + "\t" + p.getSolicitud().getTitular().getClienteID() + "\t" + p.getSolicitud().getTipo() + "\t"
+                        + p.getSolicitud().getCódigoCredito() + "\t" + p.getSolicitud().getFecha() + "\t"
+                        + p.getSolicitud().getValor() + "\t" + p.getSolicitud().getnCuotas() + "\t"
+                        + p.getCuotas() + "\n");
+                aux.Push(p);
+            }
+            while (!aux.isEmpty()) {
+                pila.Push(aux.Pop());
+            }
+
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Cola LeerCola(String ruta, List listaCreditos) {
+        Cola cola = new Cola();
+        File file = new File(ruta);
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String registro;
+
+            while ((registro = br.readLine()) != null) {
+                String[] campos = registro.split("\t");
+
+                Credito creditov = listaCreditos.buscarCredito(Integer.parseInt(campos[2]));
+
+                if (creditov != null) {
+                    // Assume first field indicates approval status
+                    boolean isApproved = Boolean.parseBoolean(campos[0]);
+                    CreditoVigente creditoVigente = new CreditoVigente(isApproved, creditov);
+                    cola.Enqueue(creditoVigente);
+                } else {
+                    System.out.println("Crédito con ID " + campos[1] + " no encontrado en listaCreditos.");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return cola;
+    }
+
+    public void EscribirCola(Cola cola) {
+        Cola aux = new Cola();
+        f = new File("ArchivoSolicitudes.txt");
+        try {
+            fw = new FileWriter(f);
+            bw = new BufferedWriter(fw);
+            while (!cola.isEmpty()) {
+                Credito p = (Credito) cola.Dequeue();
+                bw.write(p.getCódigoCredito() + "\t" + p.getTipo() + "\t" + p.getTitular().getClienteID()
+                        + "\t" + p.getFecha() + "\t" + p.getValor() + "\t"
+                        + p.getnCuotas() + "\n");
+                aux.Enqueue(p);
+            }
+            while (!aux.isEmpty()) {
+                cola.Enqueue(aux.DequeueSolic());
+            }
+
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void enviarFactura(List listRegistrados, List listaCreditos, int idCliente) {
+
+        Cliente cliente = listRegistrados.buscarClientePorId(idCliente);
+
+        if (cliente != null) {
+
+            Date fechaActual = new Date();
+            int mesSiguiente = fechaActual.getMonth() + 2;  
+            int anioSiguiente = fechaActual.getYear() + 1900;
+
+            String nombreArchivo = cliente.getClienteID() + "_" + cliente.getNombre() + "_" + mesSiguiente + "_" + anioSiguiente + ".txt";
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(nombreArchivo))) {
+     
+                writer.write("Señor " + cliente.getNombre() + ":");
+                writer.newLine();
+                writer.write("Dentro de los primeros 5 días del mes " + mesSiguiente + " debe realizar el pago de las siguientes cuotas:");
+                writer.newLine();
+                writer.newLine();
+
+     
+                writer.write("Codigo del credito\tValor\tPagosPendientes\tTotal");
+                writer.newLine();
+
+          
+                double totalCredito = 0.0;
+
+       
+                Node creditoActual = listaCreditos.getFirst();
+                boolean hasCredits = false;
+
+                while (creditoActual != null) {
+                    CreditoVigente credito = (CreditoVigente) creditoActual.getData();
+
+                    if (credito.getSolicitud().getTitular().getClienteID() == cliente.getClienteID()) {
+                        hasCredits = true; // Mark that at least one credit is found for this client
+
+                   
+                        double valorCredito = Ahorro_seguro.calcularTotalCredito(credito);
+                        int pagosPendientes = Ahorro_seguro.contarPagosPendientes(credito);
+
+               
+                        writer.write("Codigo del credito: " + credito.getSolicitud().getCódigoCredito()
+                                + "\tValor: " + credito.getSolicitud().getValor()
+                                + "\tPagosPendientes: " + pagosPendientes
+                                + "\tTotal: " + valorCredito);
+                        writer.newLine();
+
+                
+                        totalCredito += valorCredito;
+                    }
+
+            
+                    creditoActual = creditoActual.getLink();
+                }
+                if (!hasCredits) {
+                    writer.write("No hay créditos vigentes para este cliente.");
+                } else {
+      
+                    writer.newLine();
+                    writer.write("El total a pagar de sus créditos es:  $" + totalCredito + " pesos.");
+                }
+                JOptionPane.showMessageDialog(null, "Factura generada exitosamente: " + nombreArchivo);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(null, "Error al generar la factura: " + e.getMessage());
+            }
+        } else {
+ 
+            JOptionPane.showMessageDialog(null, "Cliente no encontrado.");
+        }
+    }
+
+}
