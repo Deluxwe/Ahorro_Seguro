@@ -18,7 +18,7 @@ public class Ahorro_seguro {
         int code = 1;
 
         String menu[] = {"Registrar Cliente", "Solicitud de credito", "Aprobar o negar una solicitud de crédito",
-            "Pagar cuota", "Cancelar crédito", "Revaluar Solicitudes", "Guardar informacion", "Mostrar Créditos de una Persona", "Exit"};
+            "Pagar cuota", "Cancelar crédito", "Revaluar Solicitudes","Enviar factura", "Guardar informacion", "Mostrar Créditos de una Persona", "Exit"};
         String option;
         do {
             option = (String) JOptionPane.showInputDialog(null, "Select", "Menu", 1, null, menu, menu[0]);
@@ -97,6 +97,13 @@ public class Ahorro_seguro {
 
                     JOptionPane.showMessageDialog(null, "Revaluación de solicitudes completada.");
                     break;
+                    
+                    
+                case "Enviar factura":
+                    int idCl= Integer.parseInt(JOptionPane.showInputDialog("Ingrese la identificación del cliente"));
+                    a.enviarFactura(listRegistrados, listaCreditos, idCl);
+                    break;
+                    
                 case "Guardar informacion":
                     a.EscribirListaCliente(listRegistrados);
                     a.EscribirListaCredito(listaCreditos);
@@ -109,23 +116,20 @@ public class Ahorro_seguro {
                 case "Mostrar Créditos de una Persona":
                     int idCliente = Integer.parseInt(JOptionPane.showInputDialog("Ingrese la identificación del cliente"));
 
-                    // Use listRegistrados to find the client, as it should contain Cliente objects
+
                     Cliente cliente = listRegistrados.buscarClientePorId(idCliente);
 
                     if (cliente != null) {
-                        // Client found, now show their credits
+
                         String mensaje = "Créditos del cliente " + cliente.getNombre() + " (ID: " + cliente.getClienteID() + "):\n\n";
 
-                        // Traverse the list of active credits (listaCreditos) to display this client's credits
-                        Node creditoActual = listaCreditos.getFirst(); // Primer nodo de la lista de créditos
+                        Node creditoActual = listaCreditos.getFirst();
                         boolean tieneCreditos = false;
 
                         while (creditoActual != null) {
                             CreditoVigente credito = (CreditoVigente) creditoActual.getData();
 
-                            // Check if the credit belongs to the client
                             if (credito.getSolicitud().getTitular().getClienteID() == cliente.getClienteID()) {
-                                // Display credit information
                                 mensaje += "Código de Crédito: " + credito.getSolicitud().getCódigoCredito() + "\n";
                                 mensaje += "Cuotas Pendientes: " + contarPagosPendientes(credito) + "\n";
                                 mensaje += "Monto Pendiente: $" + calcularTotalCredito(credito) + "\n";
@@ -348,4 +352,3 @@ public class Ahorro_seguro {
 }
 
 // math.random()*4+28
-
